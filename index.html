@@ -23,9 +23,51 @@
         firebase.initializeApp(firebaseConfig);
         
         // Check authentication before loading the app
-        firebase.auth().onAuthStateChanged((user) => {
+        firebase.auth().onAuthStateChanged(async (user) => {
             if (!user) {
                 window.location.href = 'login/';
+                return;
+            }
+            
+            // Check if user is a teacher and redirect to teacher dashboard
+            const userRole = localStorage.getItem(`userRole_${user.uid}`);
+            if (userRole === 'teacher') {
+                window.location.href = 'teacher/';
+                return;
+            }
+            
+            // For all non-teacher users, verify they exist as students in the database
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'verifyStudent',
+                        studentEmail: user.email
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (!result.exists) {
+                        // Student not found in database, logout
+                        alert('Access denied. You are not registered as a student.');
+                        firebase.auth().signOut();
+                        return;
+                    }
+                } else {
+                    console.error('Failed to verify student');
+                    alert('Unable to verify student access. Please try again.');
+                    firebase.auth().signOut();
+                    return;
+                }
+            } catch (error) {
+                console.error('Error verifying student:', error);
+                alert('Unable to verify student access. Please try again.');
+                firebase.auth().signOut();
+                return;
             }
         });
         
@@ -126,9 +168,9 @@
                     <div class="welcome-icon">
                         <i class="ph ph-book-open" style="font-size: 48px; color: #4a90e2;"></i>
                     </div>
-                    <h1 class="main-title">Chemistry Learning Assistant</h1>
+                    <h1 class="main-title"> Learning Assistant</h1>
                     <div class="welcome-text">
-                        Select any chemistry chapter from the sidebar to start your personalized learning experience. I'll help you understand concepts, solve problems, and master the fundamentals.
+                        Select any chapter from the sidebar to start your personalized learning experience. I'll help you understand concepts, solve problems, and master the fundamentals.
                     </div>
                 </div>
 
@@ -150,7 +192,7 @@
                 </div>
 
                 <!-- Chapter Content -->
-                <div x-show="chapterContent && !contentLoading" class="chat-welcome">
+                <div x-show="chapterContent && !contentLoading && messages.length === 0" class="chat-welcome">
                     <div class="welcome-icon">
                         <span style="font-size: 48px;" x-text="chapterContent?.emoji"></span>
                     </div>
@@ -161,11 +203,39 @@
 
                     <div class="suggestion-grid">
                         <template x-for="suggestion in chapterContent?.suggestions" :key="suggestion">
-                            <div class="suggestion-card">
+                            <div class="suggestion-card" @click="sendSuggestion(suggestion)">
                                 <i class="ph ph-chat-circle"></i>
                                 <span x-text="suggestion"></span>
                             </div>
                         </template>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div x-show="messages.length > 0" class="chat-messages" id="chatMessages">
+                    <template x-for="message in messages" :key="message.id">
+                        <div class="message" :class="message.role">
+                            <div class="message-content">
+                                <div x-show="message.files && message.files.length > 0" class="message-files">
+                                    <template x-for="file in message.files" :key="file.name">
+                                        <div class="message-file">
+                                            <i class="ph" :class="file.type === 'pdf' ? 'ph-file-pdf' : 'ph-image'"></i>
+                                            <span x-text="file.name"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="message-text" x-html="formatMessage(message.content)"></div>
+                            </div>
+                            <div class="message-time" x-text="formatTime(message.timestamp)"></div>
+                        </div>
+                    </template>
+                    
+                    <div x-show="isTyping" class="message assistant">
+                        <div class="message-content">
+                            <div class="typing-indicator">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -190,16 +260,20 @@
             </div>
 
             <div class="input-container">
-                <input type="text" class="input-box" :placeholder="selectedChapter ? `Ask about ${selectedChapter.name.toLowerCase()} concepts...` : 'Select a chapter to start asking questions...'">
-                <div class="input-meta">
-                    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" multiple style="display: none;" @change="handleFileSelect($event)">
-                    <button class="attach-btn" @click="document.getElementById('fileInput').click()" :disabled="selectedFiles.length >= 3">
-                        <i class="ph ph-paperclip ph"></i>
+                <form @submit.prevent="sendMessage()" class="chat-form">
+                    <input type="text" class="input-box" x-model="currentMessage" 
+                           :placeholder="selectedChapter ? `Ask about ${selectedChapter.name.toLowerCase()} concepts...` : 'Select a chapter to start asking questions...'" 
+                           :disabled="!selectedChapter || isTyping">
+                    <div class="input-meta">
+                        <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp" multiple style="display: none;" @change="handleFileSelect($event)">
+                        <button type="button" class="attach-btn" @click="document.getElementById('fileInput').click()" :disabled="selectedFiles.length >= 3 || isTyping">
+                            <i class="ph ph-paperclip ph"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="send-btn" :disabled="!currentMessage.trim() || !selectedChapter || isTyping">
+                        <i class="ph ph-paper-plane-right ph"></i>
                     </button>
-                </div>
-                <button class="send-btn">
-                    <i class="ph ph-paper-plane-right ph"></i>
-                </button>
+                </form>
             </div>
 
 
@@ -222,7 +296,7 @@
                 </div>
             </div>
 
-            <div class="menu-item audio-overview">
+            <div class="menu-item audio-overview" @click="generateAudioOverview()">
                 <i class="ph ph-waveform menu-icon"></i>
                 <span class="menu-text">Audio Overview</span>
             </div>

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Teacher Dashboard - Setu</title>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.8/firebase-auth.js"></script>
     <style>
         * {
             margin: 0;
@@ -927,6 +929,185 @@
         .remove-file:hover {
             color: #dc2626;
         }
+        
+        /* Loading States */
+        .loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid transparent;
+            border-top: 2px solid #c1fa6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 14px;
+            height: 14px;
+            margin: -7px 0 0 -7px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .form-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .form-loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(26, 26, 26, 0.8);
+            z-index: 10;
+            border-radius: 8px;
+        }
+        
+        .form-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid #c1fa6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 11;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(2px);
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid transparent;
+            border-top: 3px solid #c1fa6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: #ffffff;
+            margin-top: 16px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        /* Shimmer Loading Styles */
+        .shimmer-card {
+            height: 230px;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #2a2a2a 25%, #333 50%, #2a2a2a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .shimmer-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 18px 20px 20px;
+        }
+        
+        .shimmer-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .shimmer-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .shimmer-author {
+            width: 60px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        
+        .shimmer-title {
+            width: 80%;
+            height: 24px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+            margin-bottom: 14px;
+        }
+        
+        .shimmer-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .shimmer-date {
+            width: 120px;
+            height: 14px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        
+        .shimmer-menu {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
@@ -952,151 +1133,10 @@
         </div>
     </div>
 
-    <h1 class="section-title">My Teaching Materials</h1>
+    <h1 class="section-title" id="materialsTitle">My Teaching Materials</h1>
 
     <div class="notebooks-grid">
-        <div class="notebook-card card-1" data-chid="math-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-multi">📚</div>
-                    <span class="notebook-author">Mathematics</span>
-                </div>
-                <h2 class="notebook-title">Algebra Fundamentals</h2>
-                <div class="notebook-meta">
-                    <span>6 May 2025 · 15 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-2" data-chid="sci-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-rss">🔬</div>
-                    <span class="notebook-author">Science</span>
-                </div>
-                <h2 class="notebook-title">Chemistry Lab Experiments</h2>
-                <div class="notebook-meta">
-                    <span>26 Apr 2025 · 22 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-3" data-chid="bio-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-book">📖</div>
-                </div>
-                <h2 class="notebook-title">Biology Study Guide</h2>
-                <div class="notebook-meta">
-                    <span>31 Jul 2025 · 18 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-4" data-chid="hist-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-e">H</div>
-                    <span class="notebook-author">History</span>
-                </div>
-                <h2 class="notebook-title">World War II Timeline</h2>
-                <div class="notebook-meta">
-                    <span>7 Jul 2025 · 25 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-5" data-chid="cs-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-rss2">💻</div>
-                    <span class="notebook-author">Computer Science</span>
-                </div>
-                <h2 class="notebook-title">Python Programming Basics</h2>
-                <div class="notebook-meta">
-                    <span>10 Jul 2025 · 12 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-6" data-chid="art-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-rss2">🎨</div>
-                    <span class="notebook-author">Art</span>
-                </div>
-                <h2 class="notebook-title">Renaissance Art History</h2>
-                <div class="notebook-meta">
-                    <span>9 Jul 2025 · 20 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-7" data-chid="eng-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-avatar">📝</div>
-                    <span class="notebook-author">English</span>
-                </div>
-                <h2 class="notebook-title">Creative Writing Workshop</h2>
-                <div class="notebook-meta">
-                    <span>6 May 2025 · 16 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="notebook-card card-8" data-chid="geo-001">
-            <div class="notebook-content">
-                <div class="notebook-header">
-                    <div class="notebook-icon icon-rss3">🌍</div>
-                    <span class="notebook-author">Geography</span>
-                </div>
-                <h2 class="notebook-title">Climate Change Studies</h2>
-                <div class="notebook-meta">
-                    <span>12 May 2025 · 19 students</span>
-                    <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="editLesson(this)">Edit</button>
-                        <button class="dropdown-item" onclick="deleteLesson(this)">Delete</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Dynamic content will be loaded here -->
     </div>
 
     <!-- Create Class Modal -->
@@ -1148,19 +1188,15 @@
                         <label class="form-label">Student Email</label>
                         <input type="email" class="form-input" id="studentEmail" placeholder="student@example.com" required>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Current Students</label>
-                        <div class="student-list" id="studentList">
-                            <div class="student-item">
-                                <span class="student-email">john.doe@student.edu</span>
-                                <button type="button" class="remove-student" onclick="removeStudent(this)"><i class="ph ph-trash"></i></button>
-                            </div>
-                            <div class="student-item">
-                                <span class="student-email">jane.smith@student.edu</span>
-                                <button type="button" class="remove-student" onclick="removeStudent(this)"><i class="ph ph-trash"></i></button>
-                            </div>
+                    
+                    <div id="studentSuccess" class="form-group" style="display: none; background: #1a4d3a; border: 1px solid #22c55e; border-radius: 8px; padding: 16px; margin-top: 16px;">
+                        <div style="color: #22c55e; font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="ph ph-check-circle"></i>
+                            Student Added Successfully!
                         </div>
+                        <div id="studentDetails" style="color: #e0e0e0; font-size: 14px; line-height: 1.5;"></div>
                     </div>
+    
                     <div class="modal-actions">
                         <button type="button" class="btn-secondary" onclick="closeManagementModal('addStudentModal')">Cancel</button>
                         <button type="submit" class="btn-primary">Add Student</button>
@@ -1180,6 +1216,12 @@
             <div class="modal-body-mgmt">
                 <form id="addSubjectForm">
                     <div class="form-group">
+                        <label class="form-label">Select Class</label>
+                        <select class="form-select" id="subjectClassSelect" required>
+                            <option value="">Choose a class</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Subject Name</label>
                         <input type="text" class="form-input" id="subjectName" placeholder="e.g., Advanced Physics" required>
                     </div>
@@ -1193,25 +1235,19 @@
                         <input type="file" id="subjectFiles" multiple accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
                         <div id="uploadedFiles" class="uploaded-files"></div>
                     </div>
+                    
+                    <div id="subjectSuccess" class="form-group" style="display: none; background: #1a4d3a; border: 1px solid #22c55e; border-radius: 8px; padding: 16px; margin-top: 16px;">
+                        <div style="color: #22c55e; font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="ph ph-check-circle"></i>
+                            Subject Added Successfully!
+                        </div>
+                        <div id="subjectDetails" style="color: #e0e0e0; font-size: 14px; line-height: 1.5;"></div>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Current Subjects</label>
                         <div class="subject-grid" id="subjectGrid">
-                            <div class="subject-chip">
-                                <span>Mathematics</span>
-                                <button type="button" class="remove-subject" onclick="removeSubject(this)"><i class="ph ph-x"></i></button>
-                            </div>
-                            <div class="subject-chip">
-                                <span>Science</span>
-                                <button type="button" class="remove-subject" onclick="removeSubject(this)"><i class="ph ph-x"></i></button>
-                            </div>
-                            <div class="subject-chip">
-                                <span>English</span>
-                                <button type="button" class="remove-subject" onclick="removeSubject(this)"><i class="ph ph-x"></i></button>
-                            </div>
-                            <div class="subject-chip">
-                                <span>History</span>
-                                <button type="button" class="remove-subject" onclick="removeSubject(this)"><i class="ph ph-x"></i></button>
-                            </div>
+                            <!-- Subjects will be loaded dynamically -->
                         </div>
                     </div>
                     <div class="modal-actions">
@@ -1262,7 +1298,35 @@
         </div>
     </div>
 
+    <script src="../static/firebase.static.js"></script>
     <script>
+        // Initialize Firebase and check authentication
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                // User not logged in, redirect to login
+                window.location.href = '../login';
+                return;
+            }
+            
+            const userRole = localStorage.getItem(`userRole_${user.uid}`);
+            if (userRole !== 'teacher') {
+                // User is not a teacher, redirect to main page
+                alert('Access denied. This page is for teachers only.');
+                window.location.href = '../';
+                return;
+            }
+            
+            // User is authenticated and is a teacher, continue with page functionality
+            console.log('Teacher authenticated:', user.email);
+            
+            // Load classes and subjects when page loads
+            loadClasses(user.email);
+            loadTeachingMaterials(user.email);
+        });
+        
         document.querySelectorAll('.notebook-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (!e.target.closest('.menu-btn') && !e.target.closest('.dropdown-menu')) {
@@ -1419,14 +1483,197 @@
             document.body.style.overflow = 'hidden';
         }
         
-        function openAddStudentModal() {
+        async function openAddStudentModal() {
+            const user = auth.currentUser;
+            if (user) {
+                await loadClassesForModal(user.email);
+            }
+            
+            // Hide success message when opening modal
+            document.getElementById('studentSuccess').style.display = 'none';
+            
             document.getElementById('addStudentModal').classList.add('show');
             document.body.style.overflow = 'hidden';
         }
         
-        function openAddSubjectModal() {
+        // Load classes for dropdown
+        async function loadClasses(teacherEmail) {
+            showLoadingOverlay('Loading classes...');
+            try {
+                const response = await fetch(`https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/?action=getClasses&teacherEmail=${encodeURIComponent(teacherEmail)}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    window.teacherClasses = result.classes || [];
+                    console.log('Classes loaded:', window.teacherClasses);
+                } else {
+                    console.error('Failed to load classes');
+                    window.teacherClasses = [];
+                }
+            } catch (error) {
+                console.error('Error loading classes:', error);
+                window.teacherClasses = [];
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+        
+        // Load classes for modal dropdown
+        async function loadClassesForModal(teacherEmail) {
+            const classSelect = document.getElementById('classSelect');
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            classSelect.disabled = true;
+            
+            try {
+                const response = await fetch(`https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/?action=getClasses&teacherEmail=${encodeURIComponent(teacherEmail)}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const classes = result.classes || [];
+                    
+                    // Update class select dropdown
+                    classSelect.innerHTML = '<option value="">Choose a class</option>';
+                    
+                    classes.forEach(cls => {
+                        const option = document.createElement('option');
+                        option.value = cls.id;
+                        option.textContent = cls.name;
+                        classSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Failed to load classes for modal');
+                    classSelect.innerHTML = '<option value="">Error loading classes</option>';
+                }
+            } catch (error) {
+                console.error('Error loading classes for modal:', error);
+                classSelect.innerHTML = '<option value="">Error loading classes</option>';
+            } finally {
+                classSelect.disabled = false;
+            }
+        }
+        
+        async function openAddSubjectModal() {
+            const user = auth.currentUser;
+            if (user) {
+                await loadClassesForSubjectModal(user.email);
+                await loadSubjects(user.email);
+            }
+            
+            // Hide success message when opening modal
+            document.getElementById('subjectSuccess').style.display = 'none';
+            
             document.getElementById('addSubjectModal').classList.add('show');
             document.body.style.overflow = 'hidden';
+        }
+        
+        // Load classes for subject modal dropdown
+        async function loadClassesForSubjectModal(teacherEmail) {
+            const classSelect = document.getElementById('subjectClassSelect');
+            classSelect.innerHTML = '<option value="">Loading classes...</option>';
+            classSelect.disabled = true;
+            
+            try {
+                const response = await fetch(`https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/?action=getClasses&teacherEmail=${encodeURIComponent(teacherEmail)}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const classes = result.classes || [];
+                    
+                    // Update class select dropdown
+                    classSelect.innerHTML = '<option value="">Choose a class</option>';
+                    
+                    classes.forEach(cls => {
+                        const option = document.createElement('option');
+                        option.value = cls.id;
+                        option.textContent = cls.name;
+                        classSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Failed to load classes for subject modal');
+                    classSelect.innerHTML = '<option value="">Error loading classes</option>';
+                }
+            } catch (error) {
+                console.error('Error loading classes for subject modal:', error);
+                classSelect.innerHTML = '<option value="">Error loading classes</option>';
+            } finally {
+                classSelect.disabled = false;
+            }
+        }
+        
+        // Load subjects for display
+        async function loadSubjects(teacherEmail) {
+            const subjectGrid = document.getElementById('subjectGrid');
+            subjectGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">Loading subjects...</div>';
+            
+            try {
+                const response = await fetch(`https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/?action=getSubjects&teacherEmail=${encodeURIComponent(teacherEmail)}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const subjects = result.subjects || [];
+                    
+                    // Update subject grid
+                    subjectGrid.innerHTML = '';
+                    
+                    subjects.forEach(subject => {
+                        const subjectChip = document.createElement('div');
+                        subjectChip.className = 'subject-chip';
+                        subjectChip.innerHTML = `
+                            <span>${subject.name}</span>
+                            <button type="button" class="remove-subject" onclick="deleteSubject('${subject.subjectId}')"><i class="ph ph-x"></i></button>
+                        `;
+                        subjectGrid.appendChild(subjectChip);
+                    });
+                    
+                    if (subjects.length === 0) {
+                        subjectGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 20px;">No subjects created yet</div>';
+                    }
+                } else {
+                    console.error('Failed to load subjects');
+                    subjectGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #dc2626; padding: 20px;">Error loading subjects</div>';
+                }
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                subjectGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #dc2626; padding: 20px;">Error loading subjects</div>';
+            }
+        }
+        
+        // Delete subject function
+        async function deleteSubject(subjectId) {
+            if (!confirm('Are you sure you want to delete this subject?')) {
+                return;
+            }
+            
+            showLoadingOverlay('Deleting subject...');
+            
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'deleteSubject',
+                        subjectId: subjectId
+                    })
+                });
+                
+                if (response.ok) {
+                    // Reload subjects to update the display
+                    const user = auth.currentUser;
+                    if (user) {
+                        await loadSubjects(user.email);
+                    }
+                } else {
+                    const error = await response.json();
+                    alert('Error deleting subject: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error deleting subject:', error);
+                alert('Error deleting subject. Please try again.');
+            } finally {
+                hideLoadingOverlay();
+            }
         }
         
         function closeManagementModal(modalId) {
@@ -1435,64 +1682,257 @@
         }
         
         // Form handlers
-        document.getElementById('createClassForm').addEventListener('submit', function(e) {
+        document.getElementById('createClassForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            // Handle class creation
-            alert('Class created successfully!');
+            
+            const className = this.querySelector('input[type="text"]').value;
+            const user = auth.currentUser;
+            const submitBtn = this.querySelector('.btn-primary');
+            const form = this;
+            
+            if (!user) {
+                alert('Please log in first');
+                return;
+            }
+            
+            // Add loading state
+            submitBtn.classList.add('btn-loading');
+            submitBtn.textContent = 'Creating...';
+            form.classList.add('form-loading');
+            
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'addClass',
+                        teacherEmail: user.email,
+                        className: className
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('Class created successfully!');
+                    console.log('Class created:', result.class);
+                } else {
+                    const error = await response.json();
+                    alert('Error creating class: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error creating class:', error);
+                alert('Error creating class. Please try again.');
+            } finally {
+                // Remove loading state
+                submitBtn.classList.remove('btn-loading');
+                submitBtn.textContent = 'Create Class';
+                form.classList.remove('form-loading');
+            }
+            
             closeManagementModal('createClassModal');
             this.reset();
         });
         
-        document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+        document.getElementById('addStudentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const email = document.getElementById('studentEmail').value;
-            const classSelect = document.getElementById('classSelect').value;
             
-            if (email && classSelect) {
-                // Add student to list
-                const studentList = document.getElementById('studentList');
-                const studentItem = document.createElement('div');
-                studentItem.className = 'student-item';
-                studentItem.innerHTML = `
-                    <span class="student-email">${email}</span>
-                    <button type="button" class="remove-student" onclick="removeStudent(this)"><i class="ph ph-trash"></i></button>
-                `;
-                studentList.appendChild(studentItem);
+            const studentEmail = document.getElementById('studentEmail').value;
+            const classId = document.getElementById('classSelect').value;
+            const user = auth.currentUser;
+            const submitBtn = this.querySelector('.btn-primary');
+            const form = this;
+            
+            if (!user) {
+                alert('Please log in first');
+                return;
+            }
+            
+            if (!studentEmail || !classId) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Add loading state
+            submitBtn.classList.add('btn-loading');
+            submitBtn.textContent = 'Adding...';
+            form.classList.add('form-loading');
+            
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'addStudent',
+                        teacherEmail: user.email,
+                        classId: classId,
+                        studentEmail: studentEmail
+                    })
+                });
                 
-                // Clear email input
-                document.getElementById('studentEmail').value = '';
-                alert('Student added successfully!');
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Student added:', result);
+                    
+                    // Show success message with student details
+                    const successDiv = document.getElementById('studentSuccess');
+                    const detailsDiv = document.getElementById('studentDetails');
+                    
+                    detailsDiv.innerHTML = `
+                        <strong>Student ID:</strong> ${result.student.studentID}<br>
+                        <strong>Email:</strong> ${result.student.email}<br>
+                        <strong>Class:</strong> ${result.student.className}<br>
+                        <strong>Added:</strong> ${new Date(result.student.createdAt).toLocaleString()}
+                    `;
+                    
+                    successDiv.style.display = 'block';
+                    
+                    // Clear form inputs
+                    document.getElementById('studentEmail').value = '';
+                    document.getElementById('classSelect').value = '';
+                    
+                    // Hide success message after 5 seconds
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 5000);
+                } else {
+                    const error = await response.json();
+                    alert('Error adding student: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding student:', error);
+                alert('Error adding student. Please try again.');
+            } finally {
+                // Remove loading state
+                submitBtn.classList.remove('btn-loading');
+                submitBtn.textContent = 'Add Student';
+                form.classList.remove('form-loading');
             }
         });
         
-        document.getElementById('addSubjectForm').addEventListener('submit', function(e) {
+        document.getElementById('addSubjectForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const subjectName = document.getElementById('subjectName').value;
-            const files = document.getElementById('subjectFiles').files;
             
-            if (subjectName) {
-                // Add subject to grid
-                const subjectGrid = document.getElementById('subjectGrid');
-                const subjectChip = document.createElement('div');
-                subjectChip.className = 'subject-chip';
-                subjectChip.innerHTML = `
-                    <span>${subjectName}</span>
-                    <button type="button" class="remove-subject" onclick="removeSubject(this)"><i class="ph ph-x"></i></button>
-                `;
-                subjectGrid.appendChild(subjectChip);
+            const subjectName = document.getElementById('subjectName').value;
+            const classId = document.getElementById('subjectClassSelect').value;
+            const files = document.getElementById('subjectFiles').files;
+            const user = auth.currentUser;
+            const submitBtn = this.querySelector('.btn-primary');
+            const form = this;
+            
+            if (!user) {
+                alert('Please log in first');
+                return;
+            }
+            
+            if (!subjectName || !classId) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Add loading state
+            submitBtn.classList.add('btn-loading');
+            submitBtn.textContent = 'Processing...';
+            form.classList.add('form-loading');
+            
+            try {
+                // Process files for upload
+                const fileArray = [];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    submitBtn.textContent = `Processing file ${i + 1}/${files.length}...`;
+                    const fileContent = await fileToBase64(file);
+                    fileArray.push({
+                        name: file.name,
+                        content: fileContent,
+                        type: file.type,
+                        size: file.size
+                    });
+                }
                 
-                // Clear inputs
-                document.getElementById('subjectName').value = '';
-                document.getElementById('subjectFiles').value = '';
-                document.getElementById('uploadedFiles').innerHTML = '';
-                alert(`Subject "${subjectName}" added with ${files.length} files!`);
+                submitBtn.textContent = 'Uploading...';
+                
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'addSubject',
+                        teacherEmail: user.email,
+                        classId: classId,
+                        subjectName: subjectName,
+                        files: fileArray
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Subject added:', result);
+                    
+                    // Show success message with subject details
+                    const successDiv = document.getElementById('subjectSuccess');
+                    const detailsDiv = document.getElementById('subjectDetails');
+                    
+                    detailsDiv.innerHTML = `
+                        <strong>Subject ID:</strong> ${result.subject.subjectId}<br>
+                        <strong>Name:</strong> ${result.subject.name}<br>
+                        <strong>Files Uploaded:</strong> ${result.subject.files ? result.subject.files.length : 0}<br>
+                        <strong>Added:</strong> ${new Date(result.subject.createdAt).toLocaleString()}
+                    `;
+                    
+                    successDiv.style.display = 'block';
+                    
+                    // Clear form inputs
+                    document.getElementById('subjectName').value = '';
+                    document.getElementById('subjectClassSelect').value = '';
+                    document.getElementById('subjectFiles').value = '';
+                    document.getElementById('uploadedFiles').innerHTML = '';
+                    
+                    // Reload subjects to update the display
+                    await loadSubjects(user.email);
+                    await loadTeachingMaterials(user.email);
+                    
+                    // Hide success message after 5 seconds
+                    setTimeout(() => {
+                        successDiv.style.display = 'none';
+                    }, 5000);
+                } else {
+                    const error = await response.json();
+                    alert('Error adding subject: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error adding subject:', error);
+                alert('Error adding subject. Please try again.');
+            } finally {
+                // Remove loading state
+                submitBtn.classList.remove('btn-loading');
+                submitBtn.textContent = 'Add Subject';
+                form.classList.remove('form-loading');
             }
         });
+        
+        // Helper function to convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
         
         // File upload handling
         document.getElementById('subjectFiles').addEventListener('change', function(e) {
             const files = e.target.files;
             const uploadedFilesContainer = document.getElementById('uploadedFiles');
+            uploadedFilesContainer.innerHTML = ''; // Clear previous files
             
             Array.from(files).forEach(file => {
                 const fileDiv = document.createElement('div');
@@ -1500,11 +1940,12 @@
                 
                 const fileIcon = file.type.includes('pdf') ? 'ph-file-pdf' : 'ph-image';
                 const fileColor = file.type.includes('pdf') ? '#dc2626' : '#059669';
+                const fileSize = (file.size / 1024 / 1024).toFixed(2) + ' MB';
                 
                 fileDiv.innerHTML = `
                     <div class="uploaded-file-info">
                         <i class="ph ${fileIcon}" style="color: ${fileColor};"></i>
-                        <span class="uploaded-file-name">${file.name}</span>
+                        <span class="uploaded-file-name">${file.name} (${fileSize})</span>
                     </div>
                     <button type="button" class="remove-file" onclick="removeUploadedFile(this)"><i class="ph ph-x"></i></button>
                 `;
@@ -1523,10 +1964,221 @@
             }
         }
         
-        function removeSubject(btn) {
-            if (confirm('Remove this subject?')) {
-                btn.closest('.subject-chip').remove();
+        // Show shimmer loading
+        function showShimmerLoading() {
+            const grid = document.querySelector('.notebooks-grid');
+            const title = document.getElementById('materialsTitle');
+            
+            title.innerHTML = '<div style="width: 300px; height: 32px; background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px;"></div>';
+            
+            grid.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const shimmerCard = document.createElement('div');
+                shimmerCard.className = 'shimmer-card';
+                shimmerCard.style.position = 'relative';
+                shimmerCard.innerHTML = `
+                    <div class="shimmer-content">
+                        <div class="shimmer-header">
+                            <div class="shimmer-icon"></div>
+                            <div class="shimmer-author"></div>
+                        </div>
+                        <div class="shimmer-title"></div>
+                        <div class="shimmer-meta">
+                            <div class="shimmer-date"></div>
+                            <div class="shimmer-menu"></div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(shimmerCard);
             }
+        }
+        
+        // Load teaching materials (subjects)
+        async function loadTeachingMaterials(teacherEmail) {
+            showShimmerLoading();
+            
+            try {
+                const response = await fetch(`https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/?action=getSubjects&teacherEmail=${encodeURIComponent(teacherEmail)}`);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const subjects = result.subjects || [];
+                    
+                    // Restore title
+                    document.getElementById('materialsTitle').textContent = 'My Teaching Materials';
+                    
+                    // Clear shimmer and add subjects
+                    const grid = document.querySelector('.notebooks-grid');
+                    grid.innerHTML = '';
+                    
+                    for (const subject of subjects) {
+                        // Process existing files if needed
+                        await processExistingFiles(subject.subjectId);
+                        
+                        const emoji = await generateEmoji(subject.name);
+                        const card = createSubjectCard(subject, emoji);
+                        grid.appendChild(card);
+                    }
+                    
+                    if (subjects.length === 0) {
+                        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #666; padding: 40px;">No subjects created yet. Click "+ Create new lesson" to add your first subject.</div>';
+                    }
+                } else {
+                    console.error('Failed to load subjects');
+                    document.getElementById('materialsTitle').textContent = 'My Teaching Materials';
+                }
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+                document.getElementById('materialsTitle').textContent = 'My Teaching Materials';
+            }
+        }
+        
+        // Process existing files for RAG summary
+        async function processExistingFiles(subjectId) {
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'processExistingFiles',
+                        subjectId: subjectId
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log(`Processed ${result.processedCount} files for subject ${subjectId}`);
+                }
+            } catch (error) {
+                console.error('Error processing existing files:', error);
+            }
+        }
+        
+        // Generate emoji for subject
+        async function generateEmoji(subjectName) {
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'generateEmoji',
+                        subjectName: subjectName
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    return result.emoji || '📚';
+                } else {
+                    return '📚';
+                }
+            } catch (error) {
+                console.error('Error generating emoji:', error);
+                return '📚';
+            }
+        }
+        
+        // Loading overlay functions
+        function showLoadingOverlay(message = 'Loading...') {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.id = 'loadingOverlay';
+            overlay.innerHTML = `
+                <div>
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">${message}</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // Create subject card element
+        function createSubjectCard(subject, emoji) {
+            const card = document.createElement('div');
+            const cardClass = `card-${Math.floor(Math.random() * 8) + 1}`;
+            card.className = `notebook-card ${cardClass}`;
+            card.dataset.subjectId = subject.subjectId;
+            
+            const fileCount = subject.files ? subject.files.length : 0;
+            const createdDate = new Date(subject.createdAt).toLocaleDateString('en-US', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            
+            card.innerHTML = `
+                <div class="notebook-content">
+                    <div class="notebook-header">
+                        <div class="notebook-icon" style="background: rgba(255,255,255,0.2); color: white;">${emoji}</div>
+                        <span class="notebook-author">Subject</span>
+                    </div>
+                    <h2 class="notebook-title">${subject.name}</h2>
+                    <div class="notebook-meta">
+                        <span>${createdDate} · ${fileCount} files</span>
+                        <button class="menu-btn" onclick="toggleDropdown(this)">⋯</button>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item" onclick="editSubject('${subject.subjectId}')">Edit</button>
+                            <button class="dropdown-item" onclick="deleteSubjectFromCard('${subject.subjectId}')">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Delete subject from card
+        async function deleteSubjectFromCard(subjectId) {
+            if (!confirm('Are you sure you want to delete this subject?')) {
+                return;
+            }
+            
+            showLoadingOverlay('Deleting subject...');
+            
+            try {
+                const response = await fetch('https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'deleteSubject',
+                        subjectId: subjectId
+                    })
+                });
+                
+                if (response.ok) {
+                    // Reload teaching materials
+                    const user = auth.currentUser;
+                    if (user) {
+                        await loadTeachingMaterials(user.email);
+                    }
+                } else {
+                    const error = await response.json();
+                    alert('Error deleting subject: ' + error.error);
+                }
+            } catch (error) {
+                console.error('Error deleting subject:', error);
+                alert('Error deleting subject. Please try again.');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+        
+        // Edit subject placeholder
+        function editSubject(subjectId) {
+            alert('Edit functionality coming soon!');
         }
         
         // Close modals on escape key

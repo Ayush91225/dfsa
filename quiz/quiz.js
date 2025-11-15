@@ -59,22 +59,28 @@ function quizApp() {
                     });
                 }
                 
-                const response = await fetch(`thermodynamics-quiz.json?t=${Date.now()}`);
-                this.quizData = await response.json();
-                
-                console.log('Requested Quiz ID:', requestedQuizId);
-                console.log('Available Quiz ID:', this.quizData.quizId);
-                
-                // Only show empty state if there's a URL parameter that doesn't match
-                if (requestedQuizId && requestedQuizId !== this.quizData.quizId) {
-                    console.log('Quiz ID mismatch - showing empty state');
+                if (!requestedQuizId) {
+                    console.log('No quiz ID provided - showing empty state');
                     this.showEmptyState = true;
                     this.loaded = true;
                     return;
                 }
                 
-                // If no URL parameter or it matches, proceed normally
-                console.log('Quiz ID matches or no parameter - loading quiz');
+                // Load quiz from database
+                const response = await fetch(`https://tawf54kc575lndv6wj2woqq5uy0fbfez.lambda-url.ap-south-1.on.aws/?action=getQuiz&quizId=${requestedQuizId}`);
+                
+                if (!response.ok) {
+                    console.log('Quiz not found in database - showing empty state');
+                    this.showEmptyState = true;
+                    this.loaded = true;
+                    return;
+                }
+                
+                const result = await response.json();
+                this.quizData = result.quiz;
+                
+                console.log('Loaded quiz from database:', this.quizData);
+                
                 this.showEmptyState = false;
                 this.questions = this.quizData.questions;
                 
@@ -104,7 +110,8 @@ function quizApp() {
                 this.loaded = true;
             } catch (error) {
                 console.error('Failed to load quiz data:', error);
-                this.loaded = false;
+                this.showEmptyState = true;
+                this.loaded = true;
             }
         },
         
@@ -134,7 +141,7 @@ function quizApp() {
         },
         
         get quizName() {
-            return this.quizData.quizName || 'Loading...';
+            return this.quizData.quizName || 'Quiz';
         },
         
         get timeAllowed() {

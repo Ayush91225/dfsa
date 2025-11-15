@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Path - Setu</title>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="career-styles.css">
+</head>
+<body x-data="careerManager()">
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#1a1a1a" viewBox="0 0 256 256"><path d="M200,168a32.06,32.06,0,0,0-31,24H72a32,32,0,0,1,0-64h96a40,40,0,0,0,0-80H72a8,8,0,0,0,0,16h96a24,24,0,0,1,0,48H72a48,48,0,0,0,0,96h97a32,32,0,1,0,31-40Zm0,48a16,16,0,1,1,16-16A16,16,0,0,1,200,216Z"></path></svg>
+            </div>
+            <span class="header-title">Career Path</span>
+        </div>
+        <div class="header-right">
+            <a href="../" class="btn">
+                <i class="ph ph-arrow-left"></i>
+                <span>Back</span>
+            </a>
+            <button class="icon-btn">
+                <i class="ph ph-user ph"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="content">
+            <div class="content-header">
+                <div class="content-header-left">
+                    <span class="content-title">Career Explorer</span>
+                </div>
+                <div>
+                    <button class="icon-btn" @click="rightSidebarOpen = !rightSidebarOpen">
+                        <i class="ph ph-sidebar-simple ph"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-body" style="max-width: none; width: 100%; height: 100%; padding: 0; margin: 0; position: relative;">
+                <canvas id="careerCanvas" class="career-canvas" @mousedown="startDrag" @mousemove="handleDrag" @mouseup="endDrag" @wheel="handleZoom" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd" style="width: 100%; height: 100%; padding: 0; margin: 0;"></canvas>
+                <div class="mindmap-instructions">
+                    <div class="instruction-item">
+                        <i class="ph ph-mouse"></i>
+                        <span>Click nodes for details</span>
+                    </div>
+                    <div class="instruction-item">
+                        <i class="ph ph-hand-grabbing"></i>
+                        <span>Shift+drag to move nodes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-sidebar" :class="{ 'mobile-visible': rightSidebarOpen && window.innerWidth <= 1024, 'collapsed': !rightSidebarOpen && window.innerWidth > 1024 }">
+            <div class="studio-header">
+                <span class="studio-title">Career Fields</span>
+                <button class="icon-btn" @click="rightSidebarOpen = !rightSidebarOpen">
+                    <i class="ph ph-list ph"></i>
+                </button>
+            </div>
+
+            <div class="search-box">
+                <i class="ph ph-magnifying-glass ph"></i>
+                <input type="text" placeholder="Search career fields">
+            </div>
+
+
+
+            <div class="menu-item">
+                <i class="ph ph-graduation-cap menu-icon"></i>
+                <span class="menu-text">Education Guide</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="ph ph-chart-line menu-icon"></i>
+                <span class="menu-text">Salary Trends</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="ph ph-users menu-icon"></i>
+                <span class="menu-text">Industry Network</span>
+            </div>
+
+            <div class="menu-item">
+                <i class="ph ph-bookmark menu-icon"></i>
+                <span class="menu-text">Save Careers</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" :class="{ active: window.innerWidth <= 1024 && rightSidebarOpen }" @click="rightSidebarOpen = false"></div>
+
+    <!-- Career Modal -->
+    <div x-show="showCareerModal" class="career-modal" :style="`left: ${modalPosition.x}px; top: ${modalPosition.y}px`">
+        <div class="modal-header" @mousedown="startDragModal($event)">
+            <div class="modal-title">
+                <i class="ph ph-briefcase"></i>
+                <span x-text="selectedNode?.title"></span>
+            </div>
+            <button class="modal-close" @click="closeCareerModal()">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <div class="career-info">
+                <div class="info-item">
+                    <span class="label">Salary Range:</span>
+                    <span class="value" x-text="selectedNode?.salary"></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Education:</span>
+                    <span class="value" x-text="selectedNode?.education"></span>
+                </div>
+                <div class="career-description" x-show="selectedNode?.description">
+                    <p x-text="selectedNode?.description"></p>
+                </div>
+            </div>
+            <div class="chat-area">
+                <div class="chat-message bot">
+                    <div class="message-content">
+                        How can I help you learn about becoming a <span x-text="selectedNode?.title"></span>? Ask me about skills, education path, or career prospects!
+                    </div>
+                </div>
+                <template x-if="selectedNode?.pathway">
+                    <div class="chat-message bot">
+                        <div class="message-content">
+                            <strong>Career Pathway:</strong>
+                            <ol>
+                                <template x-for="step in selectedNode.pathway" :key="step">
+                                    <li x-text="step"></li>
+                                </template>
+                            </ol>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <div class="chat-input">
+                <input type="text" placeholder="Ask about this career...">
+                <button class="send-btn">
+                    <i class="ph ph-paper-plane-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="career.js"></script>
+</body>
+</html>
